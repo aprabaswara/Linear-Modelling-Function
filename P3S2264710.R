@@ -69,6 +69,11 @@ plot.linmod <- function(x){
 }
 
 predict.linmod <- function(x,newdata){
+  x <- linmod(formula=len~supp+dose,dat=ToothGrowth)
+  names(x$flev)
+  x$yname
+  x$formula
+  newdata <- data.frame(supp=c('VC','VC','OJ','OJ'),dose=c(2.8,1,0.3,0.4))
   for (i in names(newdata)){
     if (i %in% names(x$flev) & is.factor(newdata[,i])==FALSE){
       newdata[,i] <- factor(newdata[,i])
