@@ -69,5 +69,9 @@ plot.linmod <- function(x){
 }
 
 predict.linmod <- function(x,newdata){
-  
+  for (i in names(newdata)){
+    if (i %in% names(x$flev) & is.factor(newdata[,i])==FALSE){
+      newdata[,i] <- factor(newdata[,i])
+    }
+  }
 }
