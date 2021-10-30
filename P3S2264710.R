@@ -14,10 +14,7 @@ linmod <- function(formula,dat){
   names(beta) <- colnames(X) ##label beta column based on the column name
   mu <- X %*% beta ##fitted values
   mu <- drop(mu)
-  sigma_resp <-
-  sigma_resid <- sqrt(sum(mu-y)^2/(nrow(dat)-p))##estimated standard deviation
-  sigma <- c(sigma_resp, sigma_resid)
-  names(sigma) <- c('response', 'residual')
+  sigma <- sqrt(sum((mu-y)^2)/(nrow(dat)-p))##estimated standard deviation
   
   ##calculate covariance matrix
   inv_Rt <- forwardsolve(t(qr.R(qrx)),diag(ncol(t(qr.R(qrx)))))
@@ -44,11 +41,31 @@ linmod <- function(formula,dat){
 }
 
 print.linmod <- function(x){
-  
+  beta_estimate <- x$beta
+  cov_matrix <- x$V
+  reg_formula <- x$formula
+  se_square <- c()
+  for (i in 1:nrow(cov_matrix)){
+    for (j in 1:nrow(cov_matrix)){
+      if (i == j){
+        se_square <- c(se_square, cov_matrix[i,i])
+      }
+    }
+  }
+  se <- sapply(se_square,sqrt)
+  model_report <- cbind(beta_estimate,se)
+  colnames(model_report) <- c('Estimate','s.e.')
+  print(reg_formula)
+  print(model_report)
 }
 
 plot.linmod <- function(x){
-  
+  resid <- x$y-x$mu
+  fitted <- x$mu
+  plot(x=fitted,y=resid,xlab='Fitted values',ylab='Residuals')
+  lines(lowess(x=fitted,y=resid),col="red")
+  abline(h=0,lty=3)
+  mtext(text="Residuals vs Fitted",side=3)
 }
 
 predict.linmod <- function(x,newdata){
