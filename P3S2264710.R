@@ -17,7 +17,7 @@ linmod <- function(formula,dat){
   sigma <- sqrt(sum((mu-y)^2)/(nrow(dat)-p))##estimated standard deviation
   
   ##calculate covariance matrix
-  inv_Rt <- forwardsolve(t(qr.R(qrx)),diag(ncol(t(qr.R(qrx)))))
+  inv_Rt <- forwardsolve(t(qr.R(qrx)),diag(p))
   inv_RtR <- backsolve(qr.R(qrx),inv_Rt)
   V <- sigma^2*inv_RtR ##covariance matrix
   rownames(V) <- colnames(X)
@@ -56,6 +56,7 @@ print.linmod <- function(x){
   model_report <- cbind(beta_estimate,se)
   colnames(model_report) <- c('Estimate','s.e.')
   print(reg_formula)
+  cat('\n')
   print(model_report)
 }
 
