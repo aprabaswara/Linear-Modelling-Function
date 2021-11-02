@@ -2,19 +2,19 @@
 
 
 ##Overview:
-##--------------------------------------------------------------------------------------------------
+##------------------------------------------------------------------------------------------------------------------------
 ##The aim of this code is to create a function that can be use for fitting linear model by using the 
 ##QR decomposition. Overall,there are four task that this code will performed:
+##
 ##1. Calculate and display the model summary after fitting the linear model by using linmod function
 ##
-##2. Calculate and display the regression model parameter and standard error of its parameter using 
-##   print.linmod function
+##2. Calculate and display the regression model parameter and standard error of its parameter using print.linmod function
 ##
 ##3. Display the residual vs predicted value plot using plot.linmod function
 ##
 ##4. Predict the value of response variable if a newdata is given by using predict.linmod function
 ##
-##------------------------------------------------------------------------------------------------
+##------------------------------------------------------------------------------------------------------------------------
 
 
 linmod <- function(formula,dat){
@@ -23,7 +23,9 @@ linmod <- function(formula,dat){
   
   ##input: formula = regression model formula, dat = the data used to build regression model
   
-  ##output: list containing this following element
+  ##output: 
+  ##list containing this following element:
+  
   ##beta = vector of estimated regression parameter; V = covariance matrix;
   ##mu = vector of fitted values or predicted values of the response variable; y = vector containing the response variable data;
   ##yname = response variable name; formula = model formula;
@@ -58,10 +60,8 @@ linmod <- function(formula,dat){
   
   
   
-  ##Recall that in QR decomposition R is an upper triangular matrix. Therefore 
-  ##R^{T} (transpose of R) is an lower triangular matrix. Thus, we can calculate
-  ##R^{-T} by solving R^{T}x=I using forwardsolve and calculate R^{-1}R^{-T} by 
-  ##solving Rx=R^{-T} because R is an upper triangular matrix. 
+  ##Recall that in QR decomposition R is an upper triangular matrix. Therefore, R^{T} (transpose of R) is an lower triangular matrix. Thus, we can calculate
+  ##R^{-T} by solving R^{T}x=I using forwardsolve and calculate R^{-1}R^{-T} by solving Rx=R^{-T} because R is an upper triangular matrix. 
   
   
   ##calculate covariance matrix
@@ -78,7 +78,7 @@ linmod <- function(formula,dat){
   
   
   ##finding factor variable in the data
-  factors <- names(Filter(is.factor,dat))
+  factors <- names(which(sapply(dat,is.factor)==TRUE))
   
   
   
@@ -119,16 +119,16 @@ print.linmod <- function(x){
   ##output: model summary containing regression formula, estimated value of each parameter with its standard error
   
   
-  ##to calculate the estimated standard error of regression coefficient we can do it by calculating the square root
-  ##of each entries in the diagonal of covariance matrix
+  ##To calculate the estimated standard error of regression coefficient we can do it by calculating the square root
+  ##of each entries in the diagonal of covariance matrix.
   
   
   se <- sapply(diag(x$V),sqrt) ##standard error of regression parameter
   
   
   ##displaying the regression model formula along with the parameter and standard error of the parameter
-  model_report <- cbind(x$beta,se)
-  colnames(model_report) <- c('Estimate','s.e.')
+  model_report <- cbind(x$beta,se)##combine beta and standard error into matrix by column
+  colnames(model_report) <- c('Estimate','s.e.')##give name to the matrix column
   print(x$formula)
   cat('\n')
   print(model_report)
@@ -150,7 +150,7 @@ plot.linmod <- function(x){
   
   plot(x=fitted,y=resid,xlab='Fitted values',ylab='Residuals')##create plot
   lines(lowess(x=fitted,y=resid),col="red")##trend line of residual pattern
-  abline(h=0,lty=3)##horizontal line 
+  abline(h=0,lty=3)##horizontal line indicating residual equal zero
   mtext(text="Residuals vs Fitted",side=3)##give title to the plot
 }
 
@@ -164,13 +164,31 @@ predict.linmod <- function(x,newdata){
   ##ouput:vector containing the predicted value or response variable by using newdata
   
   x <- linmod(formula=len~supp+dose,dat=ToothGrowth)
-  names(x$flev)
-  x$yname
-  x$formula
-  newdata <- data.frame(supp=c('VC','VC','OJ','OJ'),dose=c(2.8,1,0.3,0.4))
-  for (i in names(newdata)){
-    if (i %in% names(x$flev) & is.factor(newdata[,i])==FALSE){
-      newdata[,i] <- factor(newdata[,i])
+  newdata1 <- data.frame(supp=c('VC','VC'),dose=c(2.8,1))
+  if (is.null(newdata1[[x$yname]])==TRUE){
+    newdata1[[x$yname]]<-sample(0:1,nrow(newdata1),replace=TRUE)
+  }
+  
+  for (i in names(x$flev)){
+    if (is.factor(newdata1[[i]])==FALSE){
+      newdata1[[i]] <- factor(newdata1[[i]])
     }
   }
+  
+  
+  if (colnames(X)==colnames(x$V)){
+    X = model.matrix(x$formula,newdata1)
+    mu_new = X %*% x$beta
+  }
+  else{
+    if (length(colnames(X))>length(names(x$beta))){
+      unmatch_index <- which(is.na(match(colnames(X),names(x$beta)))==TRUE)
+      X = model.matrix(x$formula,newdata1)
+      mu_new = X[,-unmatch_index] %*% x$beta
+    }
+    else{
+      
+    }
+  }
+  
 }
