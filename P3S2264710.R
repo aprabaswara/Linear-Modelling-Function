@@ -24,21 +24,10 @@ linmod <- function(formula,dat){
   ##input: formula = regression model formula, dat = the data used to build regression model
   
   ##output: list containing this following element
-  ##1. beta = vector of estimated regression parameter
-  ##
-  ##2. V = covariance matrix
-  ##
-  ##3. mu = vector of fitted values or predicted values of the response variable
-  ##
-  ##4. y = vector containing the response variable data
-  ##
-  ##5. yname = response variable name
-  ##
-  ##6. formula = model formula
-  ##
-  ##7. flev = a named list containing factor and level factor
-  ##
-  ##8. sigma = the estimated standard deviation of the regression model
+  ##beta = vector of estimated regression parameter; V = covariance matrix;
+  ##mu = vector of fitted values or predicted values of the response variable; y = vector containing the response variable data;
+  ##yname = response variable name; formula = model formula;
+  ##flev = a named list containing factor and level factor; sigma = the estimated standard deviation of the regression model
   
   
   ##initialize the QR decomposition calculation
