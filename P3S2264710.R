@@ -157,7 +157,7 @@ predict.linmod <- function(x,newdata){
   ##in newdata and a level factor has a different level than in newdata (if we included a factor variable). So, it would be better if 
   ##the error output displayed from predict.linmod function to make the use now what the cause of error. 
   
-  ##checking error during newdata preprocessing and convert variable that supposed to be a factor variable
+  ##checking error during newdata preprocessing and convert variable that supposed to be a factor variable (if exist)
   ii <- which(!all.vars(x$formula)[-1] %in% colnames(newdata)) ##find independant variable in formula that wasn't included in newdata
   
   if (length(ii)!=0){
@@ -198,10 +198,11 @@ predict.linmod <- function(x,newdata){
   if (output != 'No Error'){
     result <- output ##cause of error
   }
+  
   else{
     X_new <- model.matrix(x$formula, data=newdata, xlev=x$flev) ##model matrix for newdata
     mu_new <- X_new %*% x$beta ##predicted value for newdata
-    mu_new <- drop(mu_new) ##convert matrix to vector
+    mu_new <- drop(mu_new) ##return predicted value for newdata as a vector
     result <- mu_new 
   }
   return(result)
