@@ -12,7 +12,7 @@
 ##
 ##3. Display the residual vs predicted value plot using plot.linmod function
 ##
-##4. Predict the value of response variable if a newdata is given by using predict.linmod function
+##4. Predict the value of response variable or corresponding error if a newdata is given by using predict.linmod function
 ##
 ##------------------------------------------------------------------------------------------------------------------------
 
@@ -140,7 +140,7 @@ predict.linmod <- function(x,newdata){
   
   ##input: x = object of class linmod , newdata = data without response variable
   
-  ##ouput:vector containing the predicted value or response variable by using newdata
+  ##ouput:input error or vector containing the predicted value or response variable by using newdata
   
   
   ##recall that newdata is not containing response variable. So, we have to add the dummy
@@ -153,39 +153,56 @@ predict.linmod <- function(x,newdata){
     newdata[[x$yname]]<-sample(0:1,nrow(newdata),replace=TRUE)
   }
   
-  ##convert all variable that supposed to be factor in the newdata if it has factor variable
-  ii <- which(!all.vars(x$formula)[-1] %in% colnames(newdata))
+  ##during newdata processing we should reconsider error such as there exist an independant variable in the formula that wasn't included
+  ##in newdata and a level factor has a different level than in newdata (if we included a factor variable). So, it would be better if 
+  ##the error output displayed from predict.linmod function to make the use now what the cause of error. 
+  
+  ##checking error during newdata preprocessing and convert variable that supposed to be a factor variable
+  ii <- which(!all.vars(x$formula)[-1] %in% colnames(newdata)) ##find independant variable in formula that wasn't included in newdata
+  
   if (length(ii)!=0){
-    output <- 'Error, Independent Variable In Formula Not Found In Input Data!'
+    output <- 'Error : Independent Variable In Formula Not Found In Input Data!'
   }
+  
   else if(length(x$flev)==0){
     output <- 'No Error'
   }
+  
   else{
     for (i in names(x$flev)){
+      
       if (is.factor(newdata[[i]])==FALSE){
-        newdata[[i]] <- factor(newdata[[i]])
+        newdata[[i]] <- factor(newdata[[i]]) ##convert a variable in newdata that suppose to be a factor variable in dat
       }
       
-      jj <- which(!levels(newdata[[i]]) %in% x$flev[[i]])
+      jj <- which(!levels(newdata[[i]]) %in% x$flev[[i]]) ##find level factor of a factor variable in newdata that wasn't included in flev
       
       if (length(jj)!=0){
-        output <- 'Error, Level Factor Is Difference!'
-      }else{
+        output <- 'Error : Level Factor Is Difference!'
+        break
+      }
+      
+      else{
         output <-'No Error'
       }
     }
   }
   
-  ##display prediction result
+  ##during constructing a model.matrix for newdata, we specified the level factor list (either empty or not) of factor variable in dat in the 
+  ##formula to make the model.matrix for newdata do the same factor encoding (if there exist factor variable in the formula) like in dat, 
+  ##eventhough the factor is same but incomplete. Empty list of level factor indicates no factor variable included in the formula, which we 
+  ##use and specify if the formula doesn't contain any factor variable for this code.
+  
+  
+  ##display prediction result (error or predicted values)
   if (output != 'No Error'){
-    result <- output
+    result <- output ##cause of error
   }
   else{
     X_new <- model.matrix(x$formula, data=newdata, xlev=x$flev) ##model matrix for newdata
-    mu_new <- X_new %*% x$beta
-    mu_new <- drop(mu_new)
-    result <- mu_new
+    mu_new <- X_new %*% x$beta ##predicted value for newdata
+    mu_new <- drop(mu_new) ##convert matrix to vector
+    result <- mu_new 
   }
   return(result)
 }
