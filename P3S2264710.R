@@ -223,5 +223,6 @@ predict.linmod <- function(x,newdata){
     mu_new <- drop(mu_new) ##return predicted value for newdata as a vector
     result <- mu_new 
   }
+  
   return(result)
 }
