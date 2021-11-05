@@ -29,7 +29,7 @@ linmod <- function(formula,dat){
   ##beta = vector of estimated regression parameter; V = covariance matrix;
   ##mu = vector of fitted values or predicted values of the response variable; y = vector containing the response variable data;
   ##yname = response variable name; formula = model formula;
-  ##flev = a named list containing factor and level factor; sigma = the estimated standard deviation of the regression model
+  ##flev = a named list containing factor and level factor; sigma = the estimated standard deviation
   
   
   X <- model.matrix(formula,dat) ##model matrix
@@ -61,23 +61,23 @@ linmod <- function(formula,dat){
   V <- sigma^2 * inv_RtR ##covariance matrix
   
   
-  rownames(V) <- colnames(X) ##name the row of covariance matrix by the parameter name
-  colnames(V) <- colnames(X) ##name the column of covariance matrix by the parameter name
+  rownames(V) <- colnames(V) <- colnames(X) ##name the row and columns of covariance matrix by the parameter name
   
   
   flev <- list() ##initialize factor level list
   flev_var <- c() ##initialize vector of factor variable name
   
   
-  factors <- names(which(sapply(dat,is.factor))) ##finding factor variable in the data
+  ##identify factor variable
+  factors <- names(which(sapply(dat,is.factor))) ##finding all factor variable in the data
+  factor_index <- which(all.vars(formula) %in% factors) 
+  factor_name <- all.vars(formula)[factor_index] ##factor variable in the regression formula
   
-
-  factor_index <- which(all.vars(formula) %in% factors) ##finding factor variable in the regression formula
   
   ##find level factor and the corresponding factor variable name that was used in the formula
-  for (i in all.vars(formula)[factor_index]){
-      flev <- c(flev,list(levels(dat[,i])))
-      flev_var <- c(flev_var, i)
+  for (i in factor_name){
+    flev <- c(flev,list(levels(dat[,i])))
+    flev_var <- c(flev_var, i)
   } 
   
   names(flev) <- flev_var ##label level factor vector with factor variable name
@@ -104,8 +104,8 @@ print.linmod <- function(x){
   
   se <- sapply(diag(x$V),sqrt) ##standard error of regression parameter
   
-  
-  model_report <- cbind(x$beta,se)##combine beta and standard error into matrix by column
+  ##store estimated regression parameter and its standard error in a column matrix
+  model_report <- cbind(x$beta,se)
   colnames(model_report) <- c('Estimate','s.e.')##give name to the matrix column
   
   ##displaying the regression model formula along with the parameter and standard error of the parameter
@@ -128,8 +128,8 @@ plot.linmod <- function(x){
   fitted <- x$mu ##fitted value
   
   plot(x=fitted,y=resid,xlab='Fitted values',ylab='Residuals')##create plot
-  lines(lowess(x=fitted,y=resid),col="red")##trend line of residual pattern
-  abline(h=0,lty=3)##horizontal line indicating residual equal zero
+  lines(lowess(x=fitted,y=resid),col="red")##smooth line of residual pattern
+  abline(h=0,lty=3)##dashed line (residual equal zero)
   mtext(text="Residuals vs Fitted",side=3)##plot title
 }
 
@@ -143,9 +143,11 @@ predict.linmod <- function(x,newdata){
   ##ouput:input error or vector containing the predicted value or response variable by using newdata
   
   
-  ##recall that newdata is not containing response variable. So, we have to add the dummy
-  ##response variable(0 and 1) so when we specified the formula from x class model matrix
-  ##can detect it in newdata and perform the correct calculation that we desired. 
+  ##Recall that newdata is not containing response variable. So, we have to add the dummy response
+  ##variable(0 and 1) so when we specified the formula from x class model matrix can detect it in
+  ##newdata and perform the correct calculation that we desired. Because in calculation of predicted
+  ##values using newdata didn't require response variable, so it is safe to set any values in the 
+  ##dummy response variable.
   
   
   ##give dummy response variable to newdata if this data doesn't contain response variable
@@ -153,29 +155,31 @@ predict.linmod <- function(x,newdata){
     newdata[[x$yname]]<-sample(0:1,nrow(newdata),replace=TRUE)
   }
   
-  ##during newdata processing we should reconsider error such as there exist an independant variable in the formula that wasn't included
+  ##During newdata processing we should reconsider error such as there exist an independant variable in the formula that wasn't included
   ##in newdata and a level factor has a different level than in newdata (if we included a factor variable). So, it would be better if 
-  ##the error output displayed from predict.linmod function to make the use now what the cause of error. 
+  ##the error output displayed from predict.linmod function to make the user now what the cause of error. 
   
-  ##checking error during newdata preprocessing and convert variable that supposed to be a factor variable (if exist)
+  ##checking error associated with variable name that was input in newdata
   ii <- which(!all.vars(x$formula)[-1] %in% colnames(newdata)) ##find independant variable in formula that wasn't included in newdata
   
   if (length(ii)!=0){
     output <- 'Error : Independent Variable In Formula Not Found In Input Data!'
   }
   
+  ##ignored error if no factor level
   else if(length(x$flev)==0){
-    output <- 'No Error'
-  }
+    output <- 'No Error' 
+  } 
   
   else{
     for (i in names(x$flev)){
-      
+      ##convert a variable in newdata that suppose to be a factor variable in dat
       if (is.factor(newdata[[i]])==FALSE){
-        newdata[[i]] <- factor(newdata[[i]]) ##convert a variable in newdata that suppose to be a factor variable in dat
+        newdata[[i]] <- factor(newdata[[i]]) 
       }
       
-      jj <- which(!levels(newdata[[i]]) %in% x$flev[[i]]) ##find level factor of a factor variable in newdata that wasn't included in flev
+      ##checking error associated with level factor problem
+      jj <- which(!levels(newdata[[i]]) %in% x$flev[[i]]) ##find level factor in newdata that wasn't included in flev
       
       if (length(jj)!=0){
         output <- 'Error : Level Factor Is Difference!'
@@ -185,10 +189,11 @@ predict.linmod <- function(x,newdata){
       else{
         output <-'No Error'
       }
+      
     }
   }
   
-  ##during constructing a model.matrix for newdata, we specified the level factor list (either empty or not) of factor variable in dat in the 
+  ##When constructing a model.matrix for newdata, we specified the level factor list (either empty or not) of factor variable in dat in the 
   ##formula to make the model.matrix for newdata do the same factor encoding (if there exist factor variable in the formula) like in dat, 
   ##eventhough the factor is same but incomplete. Empty list of level factor indicates no factor variable included in the formula, which we 
   ##use and specify if the formula doesn't contain any factor variable for this code.
