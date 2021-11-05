@@ -12,8 +12,8 @@
 ##
 ##3. Display the residual vs predicted value plot using plot.linmod function
 ##
-##4. Predict the value of response variable or corresponding error if a newdata is given by using predict.linmod function
-##
+##4. Predict the value of response variable or corresponding error if a new data is given by using predict.linmod function
+##   after through some data processing (conversion of factor variable and adding response column containing dummy variable)
 ##------------------------------------------------------------------------------------------------------------------------
 
 
@@ -31,6 +31,13 @@ linmod <- function(formula,dat){
   ##yname = response variable name; formula = model formula;
   ##flev = a named list containing factor and level factor; sigma = the estimated standard deviation
   
+  ##Notation:
+  ##Let A be a matrix size nxn. We use this following notation in our code:
+  ##A^{-1} = inverse of A; A^T= transpose of A; 
+  ##Q = orthogonal matrix from QR decomposition calculation;
+  ##R = upper triangular matrix from QR decomposition calculation
+  ##X = design matrix(matrix that contains data of expanatory variable) 
+  
   
   X <- model.matrix(formula,dat) ##model matrix
   qrx <- qr(X) ##get QR decomposition of model matrix
@@ -42,7 +49,7 @@ linmod <- function(formula,dat){
   n <- nrow(X) ##number of observations
   
   
-  beta <- backsolve(qr.R(qrx),qr.qty(qrx,y)[1:p]) ##regression parameter
+  beta <- backsolve(qr.R(qrx),qr.qty(qrx,y)[1:p]) ##regression parameter (R^{-1} Q^T y)
   names(beta) <- colnames(X) ##label beta column based on the column name of X
   
   
@@ -58,10 +65,15 @@ linmod <- function(formula,dat){
   
   inv_Rt <- forwardsolve(t(qr.R(qrx)),diag(p)) ##calculate R^{-T}
   inv_RtR <- backsolve(qr.R(qrx),inv_Rt) ##calculate R^{-1}R^{-T}
-  V <- sigma^2 * inv_RtR ##covariance matrix
+  V <- sigma^2 * inv_RtR ##covariance matrix (sigma^2R^{-1}R^{-T})
   
   
   rownames(V) <- colnames(V) <- colnames(X) ##name the row and columns of covariance matrix by the parameter name
+  
+  
+  ##In this step, we identify factor variable in the data and check weather they included in the formula or not. 
+  ##The reason we do this is to make the investigation much faster from the variable that satisfied this criteria
+  ##in order to investigate the level factor instead searching from all variable in the data.
   
   
   flev <- list() ##initialize factor level list
@@ -155,15 +167,15 @@ predict.linmod <- function(x,newdata){
     newdata[[x$yname]]<-sample(0:1,nrow(newdata),replace=TRUE)
   }
   
-  ##During newdata processing we should reconsider error such as there exist an independant variable in the formula that wasn't included
+  ##During newdata processing we should reconsider error such as there exist an explanatory variable in the formula that wasn't included
   ##in newdata and a level factor has a different level than in newdata (if we included a factor variable). So, it would be better if 
   ##the error output displayed from predict.linmod function to make the user now what the cause of error. 
   
   ##checking error associated with variable name that was input in newdata
-  ii <- which(!all.vars(x$formula)[-1] %in% colnames(newdata)) ##find independant variable in formula that wasn't included in newdata
+  ii <- which(!all.vars(x$formula)[-1] %in% colnames(newdata)) ##find explanatory variable in formula that wasn't included in newdata
   
   if (length(ii)!=0){
-    output <- 'Error : Independent Variable In Formula Not Found In Input Data!'
+    output <- 'Error : Explanatory Variable In Formula Not Found In Input Data!'
   }
   
   ##ignored error if no factor level
@@ -173,6 +185,7 @@ predict.linmod <- function(x,newdata){
   
   else{
     for (i in names(x$flev)){
+      
       ##convert a variable in newdata that suppose to be a factor variable in dat
       if (is.factor(newdata[[i]])==FALSE){
         newdata[[i]] <- factor(newdata[[i]]) 
@@ -195,7 +208,7 @@ predict.linmod <- function(x,newdata){
   
   ##When constructing a model.matrix for newdata, we specified the level factor list (either empty or not) of factor variable in dat in the 
   ##formula to make the model.matrix for newdata do the same factor encoding (if there exist factor variable in the formula) like in dat, 
-  ##eventhough the factor is same but incomplete. Empty list of level factor indicates no factor variable included in the formula, which we 
+  ##even though the factor is same but incomplete. Empty list of level factor indicates no factor variable included in the formula, which we 
   ##use and specify if the formula doesn't contain any factor variable for this code.
   
   
